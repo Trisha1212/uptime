@@ -39,7 +39,7 @@ exports.initWebApp = function(options) {
   var dashboard = options.dashboard;
 
 	dashboard.on('populateFromDirtyCheck', function(checkDocument, dirtyCheck, type) {
-		if (type !== 'http' && type !== 'https') return;
+		if (type !== 'http' && type !== 'https' ) return;
     if (!dirtyCheck.http_options) return;
     var http_options = dirtyCheck.http_options;
     try {
@@ -76,7 +76,7 @@ exports.initWebApp = function(options) {
 exports.initMonitor = function(options) {
 
   options.monitor.on('pollerCreated', function(poller, check, details) {
-    if (check.type !== 'http' && check.type !== 'https') return;
+    if (check.type !== 'http' && check.type !== 'https' ) return;
     var options = check.pollerParams && check.pollerParams.http_options;
     if (!options) return;
     // add the custom options to the poller target

@@ -31,7 +31,7 @@ exports.initWebApp = function(options) {
   var dashboard = options.dashboard;
 
 	dashboard.on('populateFromDirtyCheck', function(checkDocument, dirtyCheck, type) {
-		if (type !== 'http' && type !== 'https') return;
+		if (type !== 'http' && type !== 'https' && type !== 'digest-bbia-vpa-10.3.0' && type !== 'digest-bbia-vpa-10.3.0i') return;
     var match = dirtyCheck.match;
     if (match) {
       if (match.indexOf('/') !== 0) {
@@ -49,7 +49,7 @@ exports.initWebApp = function(options) {
 	});
 
   dashboard.on('checkEdit', function(type, check, partial) {
-    if (type !== 'http' && type !== 'https') return;
+    if (type !== 'http' && type !== 'https' && type !== 'digest-bbia-vpa-10.3.0' && type !== 'digest-bbia-vpa-10.3.0i') return;
     partial.push(ejs.render(template, { locals: { check: check } }));
   });
 
@@ -58,7 +58,7 @@ exports.initWebApp = function(options) {
 exports.initMonitor = function(options) {
 
   options.monitor.on('pollerPolled', function(check, res, details) {
-    if (check.type !== 'http' && check.type !== 'https') return;
+    if (check.type !== 'http' && check.type !== 'https' && check.type !== 'digest-bbia-vpa-10.3.0' && check.type !== 'digest-bbia-vpa-10.3.0i') return;
     var pattern = check.pollerParams && check.pollerParams.match;
     if (!pattern) return;
     var matchParts = pattern.match(new RegExp(matchPattern));
