@@ -41,6 +41,8 @@ var cli_opts = getopt.create([
   .bindHelp()
   .parseSystem();
 
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
+
 // database
 process.on('uncaughtException', function(err) {
   console.error('Caught exception: ' + err);

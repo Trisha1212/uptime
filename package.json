@@ -31,6 +31,7 @@
     "stdio": "0.2.6",
     "pagerduty": "0.0.3",
     "node-phantom":"*",
+    "phantom": "0.6.5",
     "node-getopt": "0.2.3",
     "coffee-script": "1.9.1"
   },
