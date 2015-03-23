@@ -39,6 +39,7 @@ plugins:
   - ./plugins/victorops
   # - ./plugins/statushub
   - ./plugins/statuspage
+  - ./plugins/httpriemann
 
 hipchat:
   apiKey: REPLACE_WITH_HIPCHAT_APIKEY # HipChat Admin API Key https://www.hipchat.com/admin/api
@@ -52,6 +53,11 @@ victorops:
 #  endpoint: https://statushub.io/api/status_pages #the same for all
 #  subdomains: REPLACE_WITH_STATUSHUB_SUBDOMAINS # for example ["my_stuff"] as you can have a number of different status pages
 #  apiKey: REPLACE_WITH_STATUSHUB_APIKEY
+
+httpriemann:
+  endpoint: http://localhost:4567
+  username: uptime
+  password: bre9zel
 
 pushbullet:
   apikey: ""
