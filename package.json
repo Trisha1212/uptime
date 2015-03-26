@@ -18,7 +18,6 @@
     "nodemailer": "1.3.2",
     "net-ping": "1.1.11",
     "tcp-ping":  "0.1.1",
-    "js-yaml": "3.2.7",
     "session.socket.io": "0.1.6",
     "connect": "2.4.5",
     "webpagetest": "0.3.1",
@@ -32,7 +31,8 @@
     "stdio": "0.2.6",
     "pagerduty": "0.0.3",
     "node-phantom":"*",
-    "node-getopt": "0.2.3"
+    "node-getopt": "0.2.3",
+    "coffee-script": "1.9.1"
   },
   "devDependencies": {
     "mocha": "1.7.x",

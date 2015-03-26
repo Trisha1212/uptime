@@ -12,6 +12,7 @@ if (process.argv.length == 3) {
 var http       = require('http');
 var https      = require('https');
 var url        = require('url');
+var coffee     = require('coffee-script/register')
 var express    = require('express');
 var config     = require('config');
 var socketIo   = require('socket.io');
