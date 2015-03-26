@@ -9,13 +9,13 @@ DateNavigation.prototype.init = function(type, check) {
   this.redraw();
   var interval = this.interval;
   interval.on('change-date', this.redraw.bind(this));
-  
+
   // change date on click
   $('#dateNavigation').on('click', 'button', function(event) {
     var data = $(this).data();
     interval.update(data.type, parseInt(data.date));
   });
-  
+
   // redraw date range when time passes to enable new interval buttons
   setInterval(this.redrawPeriods.bind(this), 5 * 60 * 1000);
 
@@ -38,7 +38,7 @@ DateNavigation.prototype.init = function(type, check) {
       uptimeBar(type, args)
     );
   });
-  
+
   // pin when scrolling
   $('#dateNavigation').affix({
     offset: $('#dateNavigation').position()

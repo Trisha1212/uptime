@@ -10,7 +10,7 @@ Then, before using the dashboard, turn on the dummy target.
 
     > node fixtures/dummyTarget.js
 
-It's a simple server that responds to the fixture pings with a quality of service determined by the URL. For instance, 
+It's a simple server that responds to the fixture pings with a quality of service determined by the URL. For instance,
 
     http://localhost:8888/90
 

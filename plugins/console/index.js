@@ -5,7 +5,7 @@
  *
  * Installation
  * ------------
- * This plugin is enabled by default. To disable it, remove its entry 
+ * This plugin is enabled by default. To disable it, remove its entry
  * from the `plugins` key of the configuration:
  *
  *   // in config/production.yaml

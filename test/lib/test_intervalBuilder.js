@@ -310,5 +310,4 @@ describe('intervalBuilder', function() {
       ], done);
     });
   });
-  
 });
