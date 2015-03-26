@@ -16,6 +16,7 @@ var express    = require('express');
 var config     = require('config');
 var socketIo   = require('socket.io');
 var fs         = require('fs');
+var getopt     = require('node-getopt');
 var monitor    = require('./lib/monitor');
 var analyzer   = require('./lib/analyzer');
 var CheckEvent = require('./models/checkEvent');
@@ -27,6 +28,18 @@ var dashboardApp = require('./app/dashboard/app');
 var cookieParser = express.cookieParser('Z5V45V6B5U56B7J5N67J5VTH345GC4G5V4');
 var connect = require('connect');
 var spdy = require('spdy');
+
+// patch in CLI options to specify your SSL stuff
+
+var cli_opts = getopt.create([
+  ['h', 'help', 'display this help'],
+  ['s', 'ssl', 'enable https server instead of http. requires options certificate and key.'],
+  ['c', 'certificate=ARG', 'SSL certificate'],
+  ['k', 'key=ARG', 'SSL private key']
+])
+  .bindHelp()
+  .parseSystem();
+
 // database
 process.on('uncaughtException', function(err) {
   console.error('Caught exception: ' + err);
@@ -40,25 +53,38 @@ a.start();
 // web front
 
 var app = module.exports = express();
+var ssl
+
 if (config.ssl && config.ssl.enabled === true) {
-  if (typeof(config.ssl.certificate) === 'undefined') {
+  ssl = config.ssl
+} else if (cli_opts.options.ssl === true || cli_opts.options.s === true) {
+  ssl = cli_opts.options
+  ssl.enabled = true
+} else {
+  ssl = false
+}
+
+
+if (ssl) {
+  if (typeof(ssl.certificate) === 'undefined') {
     throw new Error("Must specify certificate to enable SSL!");
   }
-  if (typeof(config.ssl.key) === 'undefined') {
+  if (typeof(ssl.key) === 'undefined') {
     throw new Error("Must specify key file to enable SSL!");
   }
   var options = {
-    cert: fs.readFileSync(config.ssl.certificate),
-    key: fs.readFileSync(config.ssl.key)
+    cert: fs.readFileSync(ssl.certificate),
+    key: fs.readFileSync(ssl.key)
   };
   var server = spdy.createServer(options, app);
+  // var server = https.createServer(options, app);
 } else {
   var server = http.createServer(app);
 }
 
 app.configure(function(){
   app.disable('x-powered-by');
-  app.use(express.cookieParser('Z5V45V6B5U56B7J5N67J5VTH345GC4G5V4'));
+  app.use(cookieParser);
   app.use(express.cookieSession({
     key:    'uptime',
     secret: 'FZ5HEE5YHD3E566756234C45BY4DSFZ4',
@@ -211,7 +237,7 @@ var monitorInstance;
   } else {
     port = serverUrl.port;
     if (port === null) {
-      port = config.ssl && config.ssl.enabled ? 443 : 80;
+      port = ssl && ssl.enabled ? 443 : 80;
     }
   }
 
@@ -219,9 +245,9 @@ var monitorInstance;
   var host = process.env.HOST || serverUrl.hostname;
 
   server.listen(port, function(){
-    var prefix = (config.ssl.enabled) ? 'https://' : 'http://';
+    var prefix = (ssl.enabled) ? 'https://' : 'http://';
     host = prefix + host;
-    console.log("Express server listening on %s:%d in %s mode", host, port, app.settings.env);
+    console.log("Express server listening on host %s:%d, in %s mode", host, port, app.settings.env);
   });
   server.on('error', function(e) {
     if (monitorInstance) {

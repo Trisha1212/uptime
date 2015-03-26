@@ -31,7 +31,8 @@
     "spdy": "1.30.1",
     "stdio": "0.2.6",
     "pagerduty": "0.0.3",
-    "node-phantom":"*"
+    "node-phantom":"*",
+    "node-getopt": "0.2.3"
   },
   "devDependencies": {
     "mocha": "1.7.x",
