@@ -1,23 +1,23 @@
-var async  = require('async');
+var async = require('async');
 var moment = require('moment');
-var Ping   = require('../models/ping');
-var Check   = require('../models/check');
+var Ping = require('../models/ping');
+var Check = require('../models/check');
 var IntervalBuilder = require('./intervalBuilder');
 
 var QosAggregator = function() {
 };
 
-QosAggregator.prototype.getCallback = function(callback){
+QosAggregator.prototype.getCallback = function(callback) {
   if ('undefined' == typeof callback) {
     // Mogoose Model.update() implementation requires a callback
-    return function(err) { if (err) console.dir(err); };
-  }
+    return function(err) {if (err) console.dir(err);};
+ }
   return callback;
 };
 
 QosAggregator.prototype.updateHourlyQos = function(now, callback) {
   var start = moment(now).clone().startOf('hour').toDate();
-  var end   = moment(now).clone().endOf('hour').toDate();
+  var end = moment(now).clone().endOf('hour').toDate();
   async.parallel([
     async.apply(this.updateHourlyCheckQos.bind(this), start, end),
     async.apply(this.updateHourlyTagQos.bind(this), start, end)
@@ -25,7 +25,8 @@ QosAggregator.prototype.updateHourlyQos = function(now, callback) {
 };
 
 /**
- * Aggregate Qos data of Pings from all checks around a timestamp into CheckHourlyStat documents
+ * Aggregate Qos data of Pings from all checks around a timestamp into
+ * CheckHourlyStat documents
  *
  * The method finds the boundaries of the hour
  * by resetting/completing the hour of the timestamp.
@@ -36,37 +37,37 @@ QosAggregator.prototype.updateHourlyQos = function(now, callback) {
  * @api   public
  */
 QosAggregator.prototype.updateHourlyCheckQos = function(start, end, callback) {
-  var CheckHourlyStat  = require('../models/checkHourlyStat');
+  var CheckHourlyStat = require('../models/checkHourlyStat');
   this.aggregatePingsIntoStatsGroupedByCheck(start, end, function(err, stats) {
     async.forEach(stats, function(stat, next) {
       CheckHourlyStat.update(
-        { check: stat.check, timestamp: stat.timestamp },
-        { $set: stat },
-        { upsert: true },
+        {check: stat.check, timestamp: stat.timestamp},
+        {$set: stat},
+        {upsert: true},
         next
-      );
-    }, callback);
-  });
-  QosAggregator.removeInactiveSessions();
+     );
+   }, callback);
+ });
 };
 
 QosAggregator.prototype.updateHourlyTagQos = function(start, end, callback) {
-  var TagHourlyStat   = require('../models/tagHourlyStat');
+  var TagHourlyStat = require('../models/tagHourlyStat');
   this.aggregatePingsIntoStatsGroupedByTag(start, end, function(err, stats) {
     if (err) return callback(err);
     async.forEach(stats, function(stat, next) {
       TagHourlyStat.update(
-        { name: stat.name, timestamp: start, owner: stat.owner },
-        { $set: stat },
-        { upsert: true },
+        {name: stat.name, timestamp: start, owner: stat.owner},
+        {$set: stat},
+        {upsert: true},
         next
-      );
-    }, callback);
-  });
+     );
+   }, callback);
+ });
 };
 
 /**
- * Aggregate Qos data of Pings from the last 24h into the qos property of checks and tags
+ * Aggregate Qos data of Pings from the last 24h into the qos property of
+ * checks and tags
  *
  * @param {Function} callback(err) to be called upon completion
  *
@@ -74,7 +75,7 @@ QosAggregator.prototype.updateHourlyTagQos = function(start, end, callback) {
  */
 QosAggregator.prototype.updateLast24HoursQos = function(callback) {
   var start = new Date(Date.now() - (24 * 60 * 60 * 1000));
-  var end   = new Date();
+  var end = new Date();
   async.parallel([
     async.apply(this.updateLast24HoursCheckQos.bind(this), start, end),
     async.apply(this.updateLast24HoursTagQos.bind(this), start, end),
@@ -86,29 +87,39 @@ QosAggregator.prototype.updateLast24HoursCheckQos = function(start, end, callbac
   this.aggregatePingsIntoStatsGroupedByCheck(start, end, function(err, stats) {
     if (err) return callback(err);
     async.forEach(stats, function(stat, next) {
-      Check.findById(stat.check, function (err2, check) {
+      Check.findById(stat.check, function(err2, check) {
         if (err2 || !check) return next(err2);
         check.qos = stat;
         check.markModified('qos');
         check.save(next);
-      });
-    }, callback);
-  });
+     });
+   }, callback);
+ });
 };
 
 QosAggregator.prototype.updateLast24HoursTagQos = function(start, end, callback) {
-  var Tag   = require('../models/tag');
+  var Tag = require('../models/tag');
   this.aggregatePingsIntoStatsGroupedByTag(start, end, function(err, stats) {
     if (err) return callback(err);
     async.forEach(stats, function(stat, next) {
       Tag.update(
-        { name: stat.name, owner: stat.owner },
-        { $set: { lastUpdated: end, count: stat.count, availability: stat.availability, responsiveness: stat.responsiveness, responseTime: stat.responseTime, downtime: stat.downtime, outages: stat.outages, owner: stat.owner } },
-        { upsert: true }, 
-        next
-      );
-    }, callback);
-  });
+        {name: stat.name, owner: stat.owner},
+        {$set: {
+          lastUpdated: end,
+          count: stat.count,
+          availability: stat.availability,
+          responsiveness: stat.responsiveness,
+          responseTime: stat.responseTime,
+          downtime: stat.downtime,
+          outages: stat.outages,
+          owner: stat.owner
+        }
+      },
+      {upsert: true},
+      next
+     );
+   }, callback);
+ });
 };
 
 /**
@@ -122,7 +133,7 @@ QosAggregator.prototype.updateLast24HoursTagQos = function(start, end, callback)
  */
 QosAggregator.prototype.aggregatePingsIntoStatsGroupedByCheck = function(start, end, callback) {
   async.waterfall([
-    function (next) { next(null, start, end) }, // pass the parameters to the next function
+    function(next) {next(null, start, end)}, // pass the parameters to the next function
     this.aggregatePingsByCheck,
     this.getCheckStats.bind(this)
   ], callback);
@@ -131,25 +142,25 @@ QosAggregator.prototype.aggregatePingsIntoStatsGroupedByCheck = function(start, 
 
 QosAggregator.prototype.aggregatePingsByCheck = function(start, end, callback) {
   Ping.aggregate(
-    { $match: {
-      timestamp: { $gte: start, $lte: end }
-    } },
-    { $project: {
+    {$match: {
+      timestamp: {$gte: start, $lte: end}
+   }},
+    {$project: {
       check: 1,
-      responsive: { $cond: [ { $and: ["$isResponsive"] }, 1, 0] },
+      responsive: {$cond: [ {$and: ["$isResponsive"]}, 1, 0]},
       time: 1,
       tags: 1
-    } },
-    { $group: {
+   }},
+    {$group: {
       _id: "$check",
-      count: { $sum: 1 },
-      responsiveness: { $avg: "$responsive" },
-      responseTime: { $avg: "$time" },
-      start: { $first: start.valueOf() }, // dunno any other way to set a constant
-      end: { $first: end.valueOf()}
-    } },
+      count: {$sum: 1},
+      responsiveness: {$avg: "$responsive"},
+      responseTime: {$avg: "$time"},
+      start: {$first: start.valueOf()}, // dunno any other way to set a constant
+      end: {$first: end.valueOf()}
+   }},
     callback
-  );
+ );
 };
 
 QosAggregator.prototype.getCheckStats = function(documents, callback) {
@@ -160,18 +171,18 @@ QosAggregator.prototype.getCheckStats = function(documents, callback) {
       if (err) return next(err);
       aggregatedStats.push(stat);
       next();
-    });
-  }, function(err) {
+   });
+ }, function(err) {
     callback(err, aggregatedStats);
-  });
+ });
 };
 
 QosAggregator.prototype.createCheckStatFromPingAggregationDocument = function(document, callback) {
   /*
    FIXME this might be a bad idea
    */
-  Check.findById(document._id,function(err,check){
-    if(check) {
+  Check.findById(document._id,function(err,check) {
+    if (check) {
       var stat = {
         check: document._id,
         timestamp: document.start,
@@ -179,20 +190,20 @@ QosAggregator.prototype.createCheckStatFromPingAggregationDocument = function(do
         responsiveness: document.responsiveness,
         responseTime: document.responseTime,
         owner: check.owner
-      };
+     };
       var intervalBuilder = new IntervalBuilder();
       intervalBuilder.addTarget(document._id);
       intervalBuilder.build(document.start, document.end, function(err, outages, downtime, testedTime) {
         if (err) return callback(err);
         if (outages.length) {
           stat.outages = outages;
-        }
+       }
         stat.downtime = downtime;
-        stat.availability = testedTime != 0 ? (testedTime - downtime) / testedTime : 0;
+        stat.availability = testedTime != 0 ? (testedTime - downtime) / testedTime: 0;
         callback(null, stat);
-      });
-    }
-  });
+     });
+   }
+ });
 };
 
 /**
@@ -206,7 +217,7 @@ QosAggregator.prototype.createCheckStatFromPingAggregationDocument = function(do
  */
 QosAggregator.prototype.aggregatePingsIntoStatsGroupedByTag = function(start, end, callback) {
   async.waterfall([
-    function (next) { next(null, start, end) }, // pass the parameters to the next function
+    function(next) {next(null, start, end)}, // pass the parameters to the next function
     this.aggregatePingsByTag,
     this.getTagStats.bind(this)
   ], callback);
@@ -214,26 +225,24 @@ QosAggregator.prototype.aggregatePingsIntoStatsGroupedByTag = function(start, en
 
 QosAggregator.prototype.aggregatePingsByTag = function(start, end, callback) {
   Ping.aggregate(
-    { $match: {
-      timestamp: { $gte: start, $lte: end }
-    } },
-    { $project: {
+    {$match: {timestamp: {$gte: start, $lte: end}}},
+    {$project: {
       check: 1,
-      responsive: { $cond: [ { $and: ["$isResponsive"] }, 1, 0] },
+      responsive: {$cond: [ {$and: ["$isResponsive"]}, 1, 0]},
       time: 1,
       tags: 1,
       owner: 1
-    } },
-    { $unwind: "$tags" },
-    { $group: {
+    }},
+    {$unwind: "$tags"},
+    {$group: {
       //_id: "$tags",
-      _id: { tag: "$tags", owner: "$owner" },
-      count: { $sum: 1 },
-      responsiveness: { $avg: "$responsive" },
-      responseTime: { $avg: "$time" },
-      start: { $first: start.valueOf() }, // dunno any other way to set a constant
-      end: { $first: end.valueOf() }
-    } },
+      _id: {tag: "$tags", owner: "$owner"},
+      count: {$sum: 1},
+      responsiveness: {$avg: "$responsive"},
+      responseTime: {$avg: "$time"},
+      start: {$first: start.valueOf()}, // dunno any other way to set a constant
+      end: {$first: end.valueOf()}
+    }},
     callback
   );
 };
@@ -275,7 +284,7 @@ QosAggregator.prototype.createTagStatFromPingAggregationDocument = function(docu
       if (err2) return callback(err2);
       stat.outages = outages;
       stat.downtime = downtime;
-      stat.availability = testedTime != 0 ? (testedTime - downtime) / testedTime : 0;
+      stat.availability = testedTime != 0 ? (testedTime - downtime) / testedTime: 0;
       stat.owner = owner;
       callback(null, stat);
     });
@@ -296,7 +305,7 @@ QosAggregator.prototype.createTagStatFromPingAggregationDocument = function(docu
  */
 QosAggregator.prototype.updateDailyQos = function(now, callback) {
   var start = moment(now).clone().startOf('day').toDate();
-  var end   = moment(now).clone().endOf('day').toDate();
+  var end = moment(now).clone().endOf('day').toDate();
   async.parallel([
     async.apply(this.updateDailyCheckQos.bind(this), start, end),
     async.apply(this.updateDailyTagQos.bind(this), start, end)
@@ -305,7 +314,7 @@ QosAggregator.prototype.updateDailyQos = function(now, callback) {
 
 QosAggregator.prototype.updateDailyCheckQos = function(start, end, callback) {
   async.waterfall([
-    function (next) { next(null, start, end) }, // pass the parameters to the next function
+    function(next) {next(null, start, end)}, // pass the parameters to the next function
     this.aggregateCheckHourlyStatsByCheck,
     this.createCheckDailyStats.bind(this)
   ], callback);
@@ -314,54 +323,54 @@ QosAggregator.prototype.updateDailyCheckQos = function(start, end, callback) {
 QosAggregator.prototype.aggregateCheckHourlyStatsByCheck = function(start, end, callback) {
   var CheckHourlyStat = require('../models/checkHourlyStat');
   CheckHourlyStat.aggregate(
-    { $match: {
-      timestamp: { $gte: start, $lte: end }
-    } },
-    { $sort: {
+    {$match: {
+      timestamp: {$gte: start, $lte: end}
+   }},
+    {$sort: {
       timestamp: 1
-    } },
-    { $group: {
+   }},
+    {$group: {
       _id: "$check",
-      count: { $sum: "$count" },
-      responsiveness: { $avg: "$responsiveness" },
-      responseTime: { $avg: "$responseTime" },
-      start: { $first: start.valueOf() },
-      end: { $first: end.valueOf() }
-    } },
+      count: {$sum: "$count"},
+      responsiveness: {$avg: "$responsiveness"},
+      responseTime: {$avg: "$responseTime"},
+      start: {$first: start.valueOf()},
+      end: {$first: end.valueOf()}
+   }},
     callback
-  );
+ );
 };
 
 QosAggregator.prototype.createCheckDailyStats = function(documents, callback) {
-  var CheckDailyStat  = require('../models/checkDailyStat');
+  var CheckDailyStat = require('../models/checkDailyStat');
   var day = 24 * 60 * 60 * 1000;
   async.forEach(documents, function(document, next) {
     var stat = {
       count: document.count,
       responsiveness: document.responsiveness,
       responseTime: document.responseTime
-    };
+   };
     var intervalBuilder = new IntervalBuilder();
     intervalBuilder.addTarget(document._id);
     intervalBuilder.build(document.start, document.end, function(err, outages, downtime, testedTime) {
       if (err) return next(err);
       stat.outages = outages;
       stat.downtime = downtime;
-      stat.availability = testedTime != 0 ? (testedTime - downtime) / testedTime : 0;
+      stat.availability = testedTime != 0 ? (testedTime - downtime) / testedTime: 0;
 
       CheckDailyStat.update(
-        { check: document._id, timestamp: document.start },
-        { $set: stat },
-        { upsert: true },
+        {check: document._id, timestamp: document.start},
+        {$set: stat},
+        {upsert: true},
         next
-      );
-    });
-  }, callback);
+     );
+   });
+ }, callback);
 };
 
 QosAggregator.prototype.updateDailyTagQos = function(start, end, callback) {
   async.waterfall([
-    function (next) { next(null, start, end) }, // pass the parameters to the next function
+    function(next) {next(null, start, end)}, // pass the parameters to the next function
     this.aggregateTagHourlyStatsByTag,
     this.createTagDailyStats.bind(this)
   ], callback);
@@ -370,22 +379,22 @@ QosAggregator.prototype.updateDailyTagQos = function(start, end, callback) {
 QosAggregator.prototype.aggregateTagHourlyStatsByTag = function(start, end, callback) {
   var TagHourlyStat = require('../models/tagHourlyStat');
   TagHourlyStat.aggregate(
-    { $match: {
-      timestamp: { $gte: start, $lte: end }
-    } },
-    { $sort: {
+    {$match: {
+      timestamp: {$gte: start, $lte: end}
+   }},
+    {$sort: {
       timestamp: 1
-    } },
-    { $group: {
-      _id: { tag: "$name", owner: "$owner" },
-      count: { $sum: "$count" },
-      responsiveness: { $avg: "$responsiveness" },
-      responseTime: { $avg: "$responseTime" },
-      start: { $first: start.valueOf() },
-      end: { $first: end.valueOf() }
-    } },
+   }},
+    {$group: {
+      _id: {tag: "$name", owner: "$owner"},
+      count: {$sum: "$count"},
+      responsiveness: {$avg: "$responsiveness"},
+      responseTime: {$avg: "$responseTime"},
+      start: {$first: start.valueOf()},
+      end: {$first: end.valueOf()}
+   }},
     callback
-  );
+ );
 };
 
 QosAggregator.prototype.createTagDailyStats = function(documents, callback) {
@@ -399,27 +408,27 @@ QosAggregator.prototype.createTagDailyStats = function(documents, callback) {
       responsiveness: document.responsiveness,
       responseTime: document.responseTime,
       owner: document._id.owner
-    };
+   };
     var intervalBuilder = new IntervalBuilder();
     Check.findForTag(document._id.owner,document._id.tag, function(err, checks) {
       if (err) return next(err);
       checks.forEach(function(check) {
         intervalBuilder.addTarget(check);
-      });
+     });
       intervalBuilder.build(document.start, document.end, function(err2, outages, downtime, testedTime) {
-        if (err2){ console.log('intervalBuilder error'); console.log(err2); return next(err2) };
+        if (err2) {console.log('intervalBuilder error'); console.log(err2); return next(err2)};
         stat.outages = outages;
         stat.downtime = downtime;
-        stat.availability = testedTime != 0 ? (testedTime - downtime) / testedTime : 0;
+        stat.availability = testedTime != 0 ? (testedTime - downtime) / testedTime: 0;
         TagDailyStat.update(
-          { name: document._id.tag, timestamp: document.start, owner: document._id.owner },
-          { $set: stat },
-          { upsert: true },
+          {name: document._id.tag, timestamp: document.start, owner: document._id.owner},
+          {$set: stat},
+          {upsert: true},
           next
-        );
-      });
-    });
-  }, callback);
+       );
+     });
+   });
+ }, callback);
 };
 
 /**
@@ -436,15 +445,15 @@ QosAggregator.prototype.createTagDailyStats = function(documents, callback) {
  */
 QosAggregator.prototype.updateMonthlyQos = function(now, callback) {
   var start = moment(now).clone().startOf('month').toDate();
-  var end   = moment(now).clone().endOf('month').toDate();
-  var CheckDailyStat   = require('../models/checkDailyStat');
+  var end = moment(now).clone().endOf('month').toDate();
+  var CheckDailyStat = require('../models/checkDailyStat');
   var CheckMonthlyStat = require('../models/checkMonthlyStat');
-  var TagDailyStat   = require('../models/tagDailyStat');
+  var TagDailyStat = require('../models/tagDailyStat');
   var TagMonthlyStat = require('../models/tagMonthlyStat');
   async.series([
     async.apply(this.updateMonthlyQosStats.bind(this), start, end, CheckDailyStat, CheckMonthlyStat, "$check"),
     //async.apply(this.updateMonthlyQosStats.bind(this), start, end, TagDailyStat, TagMonthlyStat, "$name"),
-    async.apply(this.updateMonthlyQosStats.bind(this), start, end, TagDailyStat, TagMonthlyStat, { tag: "$name", owner: "$owner" }),
+    async.apply(this.updateMonthlyQosStats.bind(this), start, end, TagDailyStat, TagMonthlyStat, {tag: "$name", owner: "$owner"}),
   ], callback);
 };
 
@@ -452,21 +461,21 @@ QosAggregator.prototype.updateMonthlyQosStats = function(start, end, dailyStatMo
   callback = this.getCallback(callback);
   var month = end - start;
   var pipeline = [
-    { $match: {
-      timestamp: { $gte: start, $lte: end }
-    } },
-    { $sort: {
+    {$match: {
+      timestamp: {$gte: start, $lte: end}
+   }},
+    {$sort: {
       timestamp: 1
-    } },
-    { $group: {
+   }},
+    {$group: {
       _id: groupIdentifier,
-      count: { $sum: "$count" },
-      responsiveness: { $avg: "$responsiveness" },
-      responseTime: { $avg: "$responseTime" },
-      downtime: { $sum: "$downtime" },
-      availabilities: { $push: "$availability" },
-      timestamps: { $push: "$timestamp"}
-    } }
+      count: {$sum: "$count"},
+      responsiveness: {$avg: "$responsiveness"},
+      responseTime: {$avg: "$responseTime"},
+      downtime: {$sum: "$downtime"},
+      availabilities: {$push: "$availability"},
+      timestamps: {$push: "$timestamp"}
+   }}
   ];
 
   dailyStatModel.aggregate(pipeline, function(err, stats) {
@@ -479,7 +488,7 @@ QosAggregator.prototype.updateMonthlyQosStats = function(start, end, dailyStatMo
       stat.availabilities.forEach(function(availability, index) {
         var date = new Date(stat.timestamps[index]).valueOf();
         outages.push([date, date + day, availability]);
-      });
+     });
       var toStatDocument = {
         end: end,
         count: stat.count,
@@ -488,26 +497,26 @@ QosAggregator.prototype.updateMonthlyQosStats = function(start, end, dailyStatMo
         responseTime: stat.responseTime,
         downtime: stat.downtime,
         outages: outages
-      };
+     };
 
-      if(groupIdentifier === '$check') {
+      if (groupIdentifier === '$check') {
         monthlyStatModel.update(
           {check: id, timestamp: start},
           {$set: toStatDocument},
           {upsert: true},
           cb
-        );
-      } else {
+       );
+     } else {
         monthlyStatModel.update(
-          {name: stat._id.tag , timestamp: start, owner: stat._id.owner },
+          {name: stat._id.tag , timestamp: start, owner: stat._id.owner},
           {$set: toStatDocument},
           {upsert: true},
           cb
-        );
-      }
+       );
+     }
 
-    }, callback);
-  });
+   }, callback);
+ });
 };
 
 /**
@@ -524,15 +533,15 @@ QosAggregator.prototype.updateMonthlyQosStats = function(start, end, dailyStatMo
  */
 QosAggregator.prototype.updateYearlyQos = function(now, callback) {
   var start = moment(now).clone().startOf('year').toDate();
-  var end   = moment(now).clone().endOf('year').toDate();
+  var end = moment(now).clone().endOf('year').toDate();
   var CheckMonthlyStat = require('../models/checkMonthlyStat');
-  var CheckYearlyStat  = require('../models/checkYearlyStat');
+  var CheckYearlyStat = require('../models/checkYearlyStat');
   var TagMonthlyStat = require('../models/tagMonthlyStat');
-  var TagYearlyStat  = require('../models/tagYearlyStat');
+  var TagYearlyStat = require('../models/tagYearlyStat');
   async.series([
     async.apply(this.updateYearlyQosStats.bind(this), start, end, CheckMonthlyStat, CheckYearlyStat, "$check"),
     //async.apply(this.updateYearlyQosStats.bind(this), start, end, TagMonthlyStat, TagYearlyStat, "$name"),
-    async.apply(this.updateYearlyQosStats.bind(this), start, end, TagMonthlyStat, TagYearlyStat, { tag: "$name", owner: "$owner" }),
+    async.apply(this.updateYearlyQosStats.bind(this), start, end, TagMonthlyStat, TagYearlyStat, {tag: "$name", owner: "$owner"}),
   ], callback);
 };
 
@@ -540,22 +549,22 @@ QosAggregator.prototype.updateYearlyQosStats = function(start, end, monthlyStatM
   callback = this.getCallback(callback);
   var month = end - start;
   var pipeline = [
-    { $match: {
-      timestamp: { $gte: start, $lte: end }
-    } },
-    { $sort: {
+    {$match: {
+      timestamp: {$gte: start, $lte: end}
+   }},
+    {$sort: {
       timestamp: 1
-    } },
-    { $group: {
+   }},
+    {$group: {
       _id: groupIdentifier,
-      count: { $sum: "$count" },
-      responsiveness: { $avg: "$responsiveness" },
-      responseTime: { $avg: "$responseTime" },
-      downtime: { $sum: "$downtime" },
-      availabilities: { $push: "$availability" },
-      timestamps: { $push: "$timestamp" },
-      ends: { $push: "$end" }
-    } }
+      count: {$sum: "$count"},
+      responsiveness: {$avg: "$responsiveness"},
+      responseTime: {$avg: "$responseTime"},
+      downtime: {$sum: "$downtime"},
+      availabilities: {$push: "$availability"},
+      timestamps: {$push: "$timestamp"},
+      ends: {$push: "$end"}
+   }}
   ];
   monthlyStatModel.aggregate(pipeline, function(err, stats) {
     if (err) return callback(err);
@@ -567,7 +576,7 @@ QosAggregator.prototype.updateYearlyQosStats = function(start, end, monthlyStatM
         var outageStart = new Date(stat.timestamps[index]).valueOf();
         var outageEnd = new Date(stat.ends[index]).valueOf();
         outages.push([outageStart, outageEnd, availability]);
-      });
+     });
       var toStatDocument = {
         end: end,
         count: stat.count,
@@ -576,24 +585,24 @@ QosAggregator.prototype.updateYearlyQosStats = function(start, end, monthlyStatM
         responseTime: stat.responseTime,
         downtime: stat.downtime,
         outages: outages
-      };
-      if(groupIdentifier === '$check') {
+     };
+      if (groupIdentifier === '$check') {
         yearlyStatModel.update(
           {check: id, timestamp: start},
           {$set: toStatDocument},
           {upsert: true},
           cb
-        );
-      } else {
+       );
+     } else {
         yearlyStatModel.update(
-          {name: stat._id.tag , timestamp: start, owner: stat._id.owner },
+          {name: stat._id.tag , timestamp: start, owner: stat._id.owner},
           {$set: toStatDocument},
           {upsert: true},
           cb
-        );
-      }
-    }, callback);
-  });
+       );
+     }
+   }, callback);
+ });
 };
 
 /**
@@ -646,19 +655,6 @@ QosAggregator.prototype.updateLastMonthQos = function(callback) {
 QosAggregator.prototype.updateLastYearQos = function(callback) {
   var now = new Date(Date.now() - 1000 * 60 * 6); // 1 hour and 6 minutes in the past, to accommodate script running every hour
   this.updateYearlyQos(now, callback);
-};
-
-QosAggregator.removeInactiveSessions = function(callback) {
-  var Session = require('../models/user/sessionManager');
-  var today = new Date();
-  var yesterday =  today.setDate(today.getDate()-1);
-  //db.sessions.find({lastAction: {"$lte": new Date()}})
-  Session.find({lastAction: {"$lte": yesterday}},function(e,r){
-    for(var i = 0; i < r.length;i++){
-      var doc = r[i];
-      doc.remove();
-    }
-  });
 };
 
 module.exports = new QosAggregator();

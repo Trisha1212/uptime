@@ -1,5 +1,5 @@
 var async = require('async');
-var CheckEvent = require('../models/checkEvent');
+var Event = require('../models/event');
 var Check = require('../models/check');
 
 var PAUSED = -1;
@@ -13,7 +13,7 @@ var UP = 1;
  *   builder.addTarget(check2);
  *   builder.build(begin, end, function(err, intervals, downtime) {
  *     // do things
- *   });
+ *  });
  */
 var IntervalBuilder = function() {
   this.objectIds = [];
@@ -31,7 +31,7 @@ var IntervalBuilder = function() {
 };
 
 IntervalBuilder.prototype.addTarget = function(objectId) {
-  this.objectIds.push(objectId._id ? objectId._id : objectId);
+  this.objectIds.push(objectId._id ? objectId._id: objectId);
   this.nbObjects++;
 };
 
@@ -54,13 +54,13 @@ IntervalBuilder.prototype.changeObjectState = function(objectId, message) {
       if (!this.isUp(objectId)) {
         this.states[objectId] = UP;
         return true;
-      }
+     }
       break;
     case 'down':
       if (!this.isDown(objectId)) {
         this.states[objectId] = DOWN;
         return true;
-      }
+     }
       break;
     case 'paused':
     case 'restarted':
@@ -68,9 +68,9 @@ IntervalBuilder.prototype.changeObjectState = function(objectId, message) {
       if (!this.isPaused(objectId)) {
         this.states[objectId] = PAUSED;
         return true;
-      }
+     }
       break;
-  }
+ }
   return false;
 };
 
@@ -92,37 +92,37 @@ IntervalBuilder.prototype.build = function(begin, end, callback) {
   async.auto({
     initialState: function(next) {
         self.determineInitialState(begin, next);
-    },
+   },
     intervals: ['initialState', function(next) {
         self.buildIntervalsForPeriod(begin, end, next);
-    }],
-    check: ['initialState', 'interval', function (next) {
+   }],
+    check: ['initialState', 'interval', function(next) {
         self.getCurrentCheck(next)
-    }],
-    duration: ['initialState', 'interval', 'check', function (next, results) {
+   }],
+    duration: ['initialState', 'interval', 'check', function(next, results) {
         if (typeof results.check !== 'undefined' && results.check !== null) {
           self.calculateDuration(results.check, begin, end, next);
-        }
-    }],
-    downtime: ['initialState', 'interval', 'check', 'duration', function (next, results) {
+       }
+   }],
+    downtime: ['initialState', 'interval', 'check', 'duration', function(next, results) {
         if (typeof results.check !== 'undefined' && results.check !== null) {
           self.calculateDowntime(results.check, begin, end, next);
-        };
-    }]
-    }, function(err, results) {
+       };
+   }]
+   }, function(err, results) {
       if (err) {
         return callback(err);
-      }
+     }
 
       self.duration = results.duration;
       self.downtime = results.downtime;
 
       return callback(null, self.intervals, self.downtime, self.duration);
-  });
+ });
 };
 
 IntervalBuilder.prototype.getCurrentCheck = function(callback) {
-  Check.findOne({ _id: this.objectIds[0] }, callback);
+  Check.findOne({_id: this.objectIds[0]}, callback);
 };
 
 IntervalBuilder.prototype.determineInitialState = function(timestamp, callback) {
@@ -130,19 +130,19 @@ IntervalBuilder.prototype.determineInitialState = function(timestamp, callback) 
 
   // find the first event before the timestamp for a given check
   var getInitialEvent = function(checkId, timestamp, callback) {
-    CheckEvent.find()
+    Event.find()
     .where('check').equals(checkId)
     .where('timestamp').lte(timestamp)
-    .sort({ timestamp: -1 })
-    .findOne(function(err, checkEvent) {
+    .sort({timestamp: -1})
+    .findOne(function(err, event) {
       if (err) return callback(err);
-      if (!checkEvent) {
+      if (!event) {
         // No ping ever - start the period as paused
         return callback(null, 'paused');
-      }
-      callback(null, checkEvent.message);
-    });
-  };
+     }
+      callback(null, event.message);
+   });
+ };
 
   // set initial state for all checks
   async.forEach(this.objectIds, function(objectId, next) {
@@ -150,12 +150,12 @@ IntervalBuilder.prototype.determineInitialState = function(timestamp, callback) 
       if (err) return next(err);
       self.changeObjectState(objectId, state);
       next();
-    });
+   });
   }, function(err) {
     if (err) return callback(err);
     self.setGlobalStateAtTime(self.getGlobalState(), timestamp);
     return callback(null, self.currentState);
-  });
+ });
 };
 
 /**
@@ -168,14 +168,14 @@ IntervalBuilder.prototype.determineInitialState = function(timestamp, callback) 
 IntervalBuilder.prototype.getGlobalState = function() {
   if (!this.isMultiTarget()) {
     return this.states[this.objectIds[0]];
-  }
+ }
   var paused = 0;
   for (var objectId in this.states) {
     if (this.isDown(objectId)) return DOWN; // at least one of the targets is down
     if (this.isPaused(objectId)) paused++;
-  }
+ }
   // multi-target states are paused only if all checks are paused
-  return paused === this.nbObjects ? PAUSED : UP;
+  return paused === this.nbObjects ? PAUSED: UP;
 };
 
 /**
@@ -187,12 +187,12 @@ IntervalBuilder.prototype.getGlobalState = function() {
 IntervalBuilder.prototype.setGlobalStateAtTime = function(globalState, timestamp) {
   if (globalState === this.currentState) {
     return false;
-  }
+ }
   timestamp = this.getTimestamp(timestamp);
   // complete the previous interval
   this.completeCurrentInterval(timestamp);
   // start a new interval
-  this.currentInterval = (globalState == UP) ? [] : [timestamp];
+  this.currentInterval = (globalState == UP) ? []: [timestamp];
   this.currentState = globalState;
   return true;
 };
@@ -201,68 +201,68 @@ IntervalBuilder.prototype.completeCurrentInterval = function(timestamp) {
   if (this.currentInterval.length != 1) {
     // no current interval - ignore
     return false;
-  }
+ }
   if (this.currentState == DOWN) {
     this.downtime += timestamp - this.currentInterval[0];
-  }
+ }
   this.intervals.push(this.currentInterval.concat([timestamp, this.currentState]));
   return true;
 };
 
 IntervalBuilder.prototype.buildIntervalsForPeriod = function(begin, end, callback) {
   var self = this;
-  CheckEvent.find()
+  Event.find()
   .where('check').in(this.objectIds)
   .where('timestamp').gt(begin).lte(end)
-  .sort({ timestamp: 1 })
-  .find(function(err, checkEvents) {
+  .sort({timestamp: 1})
+  .find(function(err, events) {
     if (err) return callback(err);
-    checkEvents.forEach(function(checkEvent) {
-      if (self.changeObjectState(checkEvent.check, checkEvent.message)) {
-        self.setGlobalStateAtTime(self.getGlobalState(), checkEvent.timestamp);
-      }
-    });
+    events.forEach(function(event) {
+      if (self.changeObjectState(event.check, event.message)) {
+        self.setGlobalStateAtTime(self.getGlobalState(), event.timestamp);
+     }
+   });
     self.completeCurrentInterval(end);
     callback(null);
-  });
+ });
 };
 
 IntervalBuilder.prototype.calculateDuration = function(check, begin, end, callback) {
   // a null check will occur when a tag is removed from a check.
-  if(check === null){
+  if (check === null) {
     return;
-  }
-  var durationBegin = Math.max(begin, check.firstTested),
-    durationEnd = Math.min(end, check.lastTested),
+ }
+  var durationBegin = Math.max(begin, check.firstPing),
+    durationEnd = Math.min(end, check.lastPing),
     duration = durationEnd - durationBegin;
 
   if (this.isMultiTarget()) {
     // it's a tag - no other way
     return callback(null, duration);
-  }
+ }
 
   this.intervals.forEach(function(interval) {
     if (interval[2] != PAUSED || interval[1] < durationBegin || interval[0] > durationEnd) {
       return;
-    }
+   }
 
     var effectiveBegin = Math.max(durationBegin, interval[0]),
         effectiveEnd = Math.min(durationEnd, interval[1]);
 
     duration -= effectiveEnd - effectiveBegin;
-  });
+ });
 
   return callback(null, duration);
 };
 
 IntervalBuilder.prototype.calculateDowntime = function(check, begin, end, callback) {
-  var durationBegin = Math.max(begin, check.firstTested);
-  var durationEnd = Math.min(end, check.lastTested);
+  var durationBegin = Math.max(begin, check.firstPing);
+  var durationEnd = Math.min(end, check.lastPing);
 
   if (this.isMultiTarget()) {
     // it's a tag - no other way
-    return callback(null, this.currentState == DOWN ? durationEnd - durationBegin : 0);
-  }
+    return callback(null, this.currentState == DOWN ? durationEnd - durationBegin: 0);
+ }
 
   var downtime = 0;
   var currentIntervalEnd = null;
@@ -270,37 +270,37 @@ IntervalBuilder.prototype.calculateDowntime = function(check, begin, end, callba
     currentIntervalEnd = interval[1];
     if (interval[2] != DOWN || interval[1] < durationBegin || interval[0] > durationEnd) {
       return true; // will act as a continue
-    }
+   }
 
     var effectiveBegin = Math.max(durationBegin, interval[0]),
         effectiveEnd = Math.min(durationEnd, interval[1]);
 
     downtime += effectiveEnd - effectiveBegin;
-  });
+ });
 
   if (!check.isUp) {
-    if(currentIntervalEnd === null) {
+    if (currentIntervalEnd === null) {
       downtime += durationEnd - durationBegin;
-    }else {
+   }else {
       downtime += durationEnd - currentIntervalEnd;
-    }
-  }
+   }
+ }
 
   return callback(null, downtime);
 };
 
 IntervalBuilder.prototype.getTimestamp = function(date) {
-  return date.valueOf ? date.valueOf() : date;
+  return date.valueOf ? date.valueOf(): date;
 };
 
 IntervalBuilder.prototype.completeCurrentInterval = function(timestamp) {
   if (this.currentInterval.length != 1) {
     // no current interval - ignore
     return false;
-  }
+ }
   if (this.currentState == DOWN) {
     this.downtime += timestamp - this.currentInterval[0];
-  }
+ }
 
   this.intervals.push(this.currentInterval.concat([timestamp, this.currentState]));
   return true;

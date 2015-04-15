@@ -1,11 +1,11 @@
 /**
  * Module dependencies.
  */
-var async      = require('async');
-var Ping       = require('../models/ping');
-var Check      = require('../models/check');
-var CheckEvent = require('../models/checkEvent');
-var Tag        = require('../models/tag');
+var async = require('async');
+var Ping = require('../models/ping');
+var Check = require('../models/check');
+var Event = require('../models/event');
+var Tag = require('../models/tag');
 var QosAggregator = require('./qosAggregator');
 
 /**
@@ -13,10 +13,14 @@ var QosAggregator = require('./qosAggregator');
  *
  * The analyzer aggregates the ping data into QoS scores for checks and tags.
  *
- * The constructor expects a configuration object as parameter, with these properties:
- *   updateInterval: Interval between each update of the QoS score in milliseconds, defaults to 1 minute
- *   qosAggregationInterval: Interval between each daily and hourly aggregation the QoS score in milliseconds, defaults to 1 hour
- *   pingHistory: Oldest ping and checkEvent age to keep in milliseconds, defaults to 3 months
+ * The constructor expects a configuration object as parameter, with these
+ * properties:
+ *   updateInterval: Interval between each update of the QoS score in
+ *     milliseconds, defaults to 1 minute
+ *   qosAggregationInterval: Interval between each daily and hourly aggregation
+ *     the QoS score in milliseconds, defaults to 1 hour
+ *   pingHistory: Oldest ping and event age to keep in milliseconds, defaults
+ *     to 3 months
  *
  * @param {Object} Monitor configuration
  * @api   public
@@ -61,10 +65,10 @@ Analyzer.prototype.updateAllChecks = function(callback) {
     update_24h: async.apply(QosAggregator.updateLast24HoursQos.bind(QosAggregator)),
     update_hour: async.apply(QosAggregator.updateLastHourQos.bind(QosAggregator)),
     ensure_tags: ['update_24h', async.apply(Tag.ensureTagsHaveFirstTestedDate.bind(Tag))]
-  }, function(err) {
+ }, function(err) {
     if (err) console.error(err);
     if (callback) callback(err);
-  });
+ });
 };
 
 /**
@@ -77,8 +81,8 @@ Analyzer.prototype.aggregateQos = function() {
   QosAggregator.updateLastDayQos.apply(QosAggregator);
   QosAggregator.updateLastMonthQos.apply(QosAggregator);
   QosAggregator.updateLastYearQos.apply(QosAggregator);
-  Ping.cleanup(this.config.pingHistory);
-  CheckEvent.cleanup(this.config.pingHistory);
+  utils.cleanup(Ping, this.config.pingHistory);
+  utils.cleanup(Event, this.config.pingHistory);
 };
 
 /**
@@ -86,7 +90,7 @@ Analyzer.prototype.aggregateQos = function() {
  *
  * Example:
  *
- *    m = analyzer.createAnalyzer({ updateInterval: 60000});
+ *    m = analyzer.createAnalyzer({updateInterval: 60000});
  *    m.start();
  *    // the analysis starts, every 60 seconds
  *    m.stop();
