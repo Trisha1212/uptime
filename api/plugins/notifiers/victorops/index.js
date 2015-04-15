@@ -10,9 +10,9 @@
  * Notifies all events (up, down, paused, restarted) to HipChat.
  *
  * This plugin has a dependency on `node-hipchat`.
- * Add this to the "dependencies" object in your `package.json` file :
+ * Add this to the "dependencies" object in your `package.json` file:
  *
- *   "node-spore":    "0.1.6"
+ *   "node-spore": "0.1.6"
  *
  * To enable the plugin, add the following line to the plugins section of your config file
  * plugins:
@@ -23,79 +23,79 @@
  *   victorops:
  *     endpoint: https://alert.victorops.com/integrations/generic/20131114/alert/1111111-1111-1111-1111-11111111/ # victorops rest endpoint
  */
-var CheckEvent = require('../../models/checkEvent');
+var Event = require('../../models/event');
 var spore = require('spore');
-var fs         = require('fs');
-var ejs        = require('ejs');
+var fs = require('fs');
+var ejs = require('ejs');
 
 exports.initWebApp = function(options) {
   var config = options.config.victorops;
   var incident = spore.createClient({
-    "base_url" : config.endpoint,
-    "version" : "1.0",
-    "methods" : {
-      "create" : {
-        "path" : "/:routeKey",
-        "method" : "POST",
-        "expected_status" : [200]
-      }
-    }
-  });
+    "base_url": config.endpoint,
+    "version": "1.0",
+    "methods": {
+      "create": {
+        "path": "/:routeKey",
+        "method": "POST",
+        "expected_status": [200]
+     }
+   }
+ });
 
-	CheckEvent.on('afterInsert', function (checkEvent) {
-		checkEvent.findCheck(function (err, check) {
+	Event.on('afterInsert', function(event) {
+		event.findCheck(function(err, check) {
       incidentDescriptionHandler = {
-        down: function(check, checkEvent) {
+        down: function(check, event) {
           return {
             message_type:"CRITICAL",
-            timestamp:checkEvent.timestamp,
+            timestamp:event.timestamp,
             state_message:check.name + " failed",
             entity_id:check.name,
             url:check.url,
-            cause: checkEvent.details
-          }
-        },
-        up: function(check, checkEvent) {
+            cause: event.details
+         }
+       },
+        up: function(check, event) {
           return {
             message_type:"RECOVERY",
-            timestamp:checkEvent.timestamp,
+            timestamp:event.timestamp,
             state_message:check.name + " came up again",
             url:check.url,
             entity_id:check.name
-          }
-        },
-        paused: function(check, checkEvent) {
+         }
+       },
+        paused: function(check, event) {
           return {
             message_type:"INFO",
-            timestamp:checkEvent.timestamp,
+            timestamp:event.timestamp,
             state_message:check.name + " was paused",
             url:check.url,
             entity_id:check.name
-          }
-        },
-        restarted: function(check, checkEvent) {
+         }
+       },
+        restarted: function(check, event) {
           return {
             message_type:"INFO",
-            timestamp:checkEvent.timestamp,
+            timestamp:event.timestamp,
             state_message:check.name + " was restarted",
             url:check.url,
             entity_id:check.name
-          }
-        }
-      }
+         }
+       }
+     }
 
-      if(incidentDescriptionHandler[checkEvent.message]) {
+      if (incidentDescriptionHandler[event.message]) {
         incident.create({
             routeKey: "none"
-          }, JSON.stringify(incidentDescriptionHandler[checkEvent.message](check, checkEvent)) 
+         }, JSON.stringify(incidentDescriptionHandler[event.message](check, event))
         , function(err, client) {
-          if(err) {
+          if (err) {
             console.error('VictorOps: error creating incident: ' + err);
-          } else {
+         } else {
             console.log('VictorOps: incident created');
-          }
-        });
-      }
+         }
+       });
+     }
 		});
 	});
 

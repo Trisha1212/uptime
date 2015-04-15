@@ -18,10 +18,10 @@
  *
  * Example curl to get all components: curl https://api.statuspage.io/v1/pages/2jzl9rbhcvzm/components.json -H "Authorization: OAuth fa10491960d2fa26cfd823fae332026a2a4df19996505a119677874ab3e30a83"
  */
-var CheckEvent = require('../../models/checkEvent');
+var Event = require('../../models/event');
 var spore = require('spore');
-var fs         = require('fs');
-var ejs        = require('ejs');
+var fs = require('fs');
+var ejs = require('ejs');
 
 var template = fs.readFileSync(__dirname + '/views/_detailsEdit.ejs', 'utf8');
 
@@ -30,54 +30,54 @@ exports.initWebApp = function(options) {
 
   var config = options.config.statuspage;
   var status = spore.createClient({
-    "base_url" : config.endpoint,
-    "methods" : {
-      "availability" : {
-        "path" : "/" + config.pageid + "/components/:serviceId"+".json",
-        "method" : "PATCH",
-        "headers" : {"Authorization": "OAuth "+config.apiKey,
+    "base_url": config.endpoint,
+    "methods": {
+      "availability": {
+        "path": "/" + config.pageid + "/components/:serviceId"+".json",
+        "method": "PATCH",
+        "headers": {"Authorization": "OAuth "+config.apiKey,
                       "Content-Type": "application/x-www-form-urlencoded"}
-      }
-    }
-  });
+     }
+   }
+ });
 
   var dashboard = options.dashboard;
   //responsible for persistance
-  dashboard.on('populateFromDirtyCheck', function(checkDocument, dirtyCheck, type) {
+  dashboard.on('populateCheck', function(checkDocument, dirtyCheck, type) {
     checkDocument.setPollerParam('statusPageId', dirtyCheck.statusPageId);
-  });
+ });
 
   //responsible to display check edit page with our view and a proper value
   dashboard.on('checkEdit', function(type, check, partial) {
-    check.setPollerParam('statusPageId', check.getPollerParam('statusPageId'));
-    partial.push(ejs.render(template, { locals: { check: check } }));
-  });
+    check.setPollerParam('statusPageId', check.pollerParams['statusPageId']);
+    partial.push(ejs.render(template, {locals: {check: check}}));
+ });
 
-	CheckEvent.on('afterInsert', function (checkEvent) {
-		checkEvent.findCheck(function (err, check) {
+	Event.on('afterInsert', function(event) {
+		event.findCheck(function(err, check) {
       componentStatusHandler = {
-        down: function(check, checkEvent) {
+        down: function(check, event) {
           return "component[status]=major_outage"
-        },
-        up: function(check, checkEvent) {
+       },
+        up: function(check, event) {
           return "component[status]="
-      }
-    }
+     }
+   }
     //we should react only on up and down message, and only if check has a status id provided
     var statusId = check.getPollerParam('statusPageId');
-    if (checkEvent.message=="up" || checkEvent.message=="down" && statusId){
-      var statusChange = componentStatusHandler[checkEvent.message](check, checkEvent);
+    if (event.message=="up" || event.message=="down" && statusId) {
+      var statusChange = componentStatusHandler[event.message](check, event);
       status.availability({
           serviceId: statusId
-      }, statusChange,
+     }, statusChange,
       function(err, result) {
-        if(result != null && result.status == "200") {
+        if (result != null && result.status == "200") {
           console.log('StatusPage: service status changed');
-        } else {
+       } else {
           console.error('StatusPage: error changing service status. \nResponse: ' + JSON.stringify(result));
-        }
-      });
-    }
+       }
+     });
+   }
 		});
 	});
 

@@ -10,9 +10,9 @@
  * Notifies all events (up, down, paused, restarted) to HipChat.
  *
  * This plugin has a dependency on `node-hipchat`.
- * Add this to the "dependencies" object in your `package.json` file :
+ * Add this to the "dependencies" object in your `package.json` file:
  *
- *   "node-hipchat":    "0.4.4"
+ *   "node-hipchat": "0.4.4"
  *
  * To enable the plugin, add the following line to the plugins section of your config file
  * plugins:
@@ -23,14 +23,14 @@
  *   hipchat:
  *     apiKey: 123456789012345678901234567890 # HipChat Admin API Key https://www.hipchat.com/admin/api
  *     tag:
- *       tag1: 123456  # tag name : HipChat room ID where send notification
- *       tag2: 987654  # tag name : HipChat room ID where send notification
+ *       tag1: 123456  # tag name: HipChat room ID where send notification
+ *       tag2: 987654  # tag name: HipChat room ID where send notification
  */
-var CheckEvent = require('../../models/checkEvent');
+var Event = require('../../models/event');
 var hipchat = require("node-hipchat");
 var config = require('config').hipchat;
 
-exports.initWebApp = function () {
+exports.initWebApp = function() {
 
 	var HC = new hipchat(config.apiKey);
 
@@ -58,17 +58,17 @@ exports.initWebApp = function () {
 		}
 	}
 
-	CheckEvent.on('afterInsert', function (checkEvent) {
+	Event.on('afterInsert', function(event) {
 
-		checkEvent.findCheck(function (err, check) {
+		event.findCheck(function(err, check) {
 			if (err) {
 				return console.error('HipChat notifications' + err);
 			}
 
-			check.tags.forEach(function (tag) {
+			check.tags.forEach(function(tag) {
 				var roomId = config.tag[tag];
 				if (roomId) {
-					HC.postMessage(message(roomId, check.name, checkEvent.message), function (data, err) {
+					HC.postMessage(message(roomId, check.name, event.message), function(data, err) {
 						if (err) {
 							return console.error('HipChat notifications' + JSON.stringify(error));
 						}

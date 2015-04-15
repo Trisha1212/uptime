@@ -21,15 +21,15 @@
  * To get an id of a service of you status page call: https://statushub.io/api/status_pages/yaas?api_key=your_api_key
  *
  * Create Incident and change status: https://statushub.io/api/status_pages/yaas/services/SERVICE_ID/incidents
- *               api key must be passed as a parameter and in the body: {"api_key":"API_KEY", "incident": { "title": "title", "update" :{"body": "message", "incident_type":"investigating"}}, "service_status": {"status_name": "down"} }
+ *               api key must be passed as a parameter and in the body: {"api_key":"API_KEY", "incident": {"title": "title", "update":{"body": "message", "incident_type":"investigating"}}, "service_status": {"status_name": "down"}}
  *
  * Just Status Change up/down: https://statushub.io/api/status_pages/yaas/services/SERVICE_ID/service_statuses
- *              api key must be passed as a parameter and in the body: {"api_key":"API_KEY", "service_status": {"status_name": "down"} }
+ *              api key must be passed as a parameter and in the body: {"api_key":"API_KEY", "service_status": {"status_name": "down"}}
  */
-var CheckEvent = require('../../models/checkEvent');
+var Event = require('../../models/event');
 var spore = require('spore');
-var fs         = require('fs');
-var ejs        = require('ejs');
+var fs = require('fs');
+var ejs = require('ejs');
 
 var template = fs.readFileSync(__dirname + '/views/_detailsEdit.ejs', 'utf8');
 
@@ -38,63 +38,63 @@ exports.initWebApp = function(options) {
 
   var config = options.config.statushub;
   var status = spore.createClient({
-    "base_url" : config.endpoint,
-    "methods" : {
-      "availability" : {
-        "path" : "/" + config.subdomains[0] + "/services/:serviceId/service_statuses?api_key="+config.apiKey,
-        "method" : "POST",
-        "headers" : {"Content-Type" : "application/json"}
-      }
-    }
-  });
+    "base_url": config.endpoint,
+    "methods": {
+      "availability": {
+        "path": "/" + config.subdomains[0] + "/services/:serviceId/service_statuses?api_key="+config.apiKey,
+        "method": "POST",
+        "headers": {"Content-Type": "application/json"}
+     }
+   }
+ });
 
   var dashboard = options.dashboard;
 
   //responsible for persistance
-  dashboard.on('populateFromDirtyCheck', function(checkDocument, dirtyCheck, type) {
+  dashboard.on('populateCheck', function(checkDocument, dirtyCheck, type) {
     checkDocument.setPollerParam('statusHubId', dirtyCheck.statusHubId);
-  });
+ });
 
   //responsible to display check edit page with our view and a proper value
   dashboard.on('checkEdit', function(type, check, partial) {
-    check.setPollerParam('statusHubId', check.getPollerParam('statusHubId'));
-    partial.push(ejs.render(template, { locals: { check: check } }));
-  });
+    check.setPollerParam('statusHubId', check.pollerParams['statusHubId']);
+    partial.push(ejs.render(template, {locals: {check: check}}));
+ });
 
 
 
 
   if (config.apiKey) {
-    CheckEvent.on('afterInsert', function (checkEvent) {
-      checkEvent.findCheck(function (err, check) {
+    Event.on('afterInsert', function(event) {
+      event.findCheck(function(err, check) {
         incidentDescriptionHandler = {
-          down: function(check, checkEvent) {
+          down: function(check, event) {
             return {
               service_status: {status_name: "down"}
-            }
-          },
-          up: function(check, checkEvent) {
+           }
+         },
+          up: function(check, event) {
             return {
               service_status: {status_name: "up"}
-            }
-          },
-        }
+           }
+         },
+       }
         var statusId = check.getPollerParam('statusHubId');
-        if(incidentDescriptionHandler[checkEvent.message] && statusId){
+        if (incidentDescriptionHandler[event.message] && statusId) {
           status.availability({
               serviceId: statusId
-            }, JSON.stringify(incidentDescriptionHandler[checkEvent.message](check, checkEvent))
+           }, JSON.stringify(incidentDescriptionHandler[event.message](check, event))
           , function(err, result) {
-            if(result != null && result.status == "200") {
+            if (result != null && result.status == "200") {
               console.log('StatusHub: service status changed');
-            } else {
+           } else {
               console.error('StatusHub: error changing service status. \nResponse: ' + JSON.stringify(result));
-            }
-          });
-        }
-      });
-    });
-  }
+           }
+         });
+       }
+     });
+   });
+ }
 
   console.log('Enabled StatusHub notifications');
 };

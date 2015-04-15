@@ -15,10 +15,10 @@
  *     endpoint: https://<user>:<password>@<httpriemann host>/
  *
  */
-var CheckEvent = require('../../models/checkEvent');
+var Event = require('../../models/event');
 var spore = require('spore');
-var fs         = require('fs');
-var ejs        = require('ejs');
+var fs = require('fs');
+var ejs = require('ejs');
 
 var template = fs.readFileSync(__dirname + '/views/_detailsEdit.ejs', 'utf8');
 
@@ -28,41 +28,41 @@ exports.initWebApp = function(options) {
   var config = options.config.httpriemann;
   var BasicAuth = spore.middlewares.basic(config.username, config.password)
   var status = spore.createClient(BasicAuth, {
-    "base_url" : config.endpoint,
-    "methods" : {
-      "sendEvent" : {
-        "path" : "/",
-        "method" : "POST",
-      }
-    }
-  });
+    "base_url": config.endpoint,
+    "methods": {
+      "sendEvent": {
+        "path": "/",
+        "method": "POST",
+     }
+   }
+ });
 
   var dashboard = options.dashboard;
   //responsible for persistance
-  dashboard.on('populateFromDirtyCheck', function(checkDocument, dirtyCheck, type) {
+  dashboard.on('populateCheck', function(checkDocument, dirtyCheck, type) {
     checkDocument.setPollerParam('riemannServiceId', dirtyCheck.riemannServiceId);
-  });
+ });
 
   //responsible to display check edit page with our view and a proper value
   dashboard.on('checkEdit', function(type, check, partial) {
-    check.setPollerParam('riemannServiceId', check.getPollerParam('riemannServiceId'));
-    partial.push(ejs.render(template, { locals: { check: check } }));
-  });
+    check.setPollerParam('riemannServiceId', check.pollerParams['riemannServiceId']);
+    partial.push(ejs.render(template, {locals: {check: check}}));
+ });
 
-	CheckEvent.on('afterInsert', function (checkEvent) {
-		checkEvent.findCheck(function (err, check) {
+	Event.on('afterInsert', function(event) {
+		event.findCheck(function(err, check) {
       componentStatusHandler = {
-        down: function(check, checkEvent) {
+        down: function(check, event) {
           return "error"
-        },
-        up: function(check, checkEvent) {
+       },
+        up: function(check, event) {
           return "ok"
-      }
-    }
+     }
+   }
     //we should react only on up and down message, and only if check has a status id provided
-    var riemannServiceId = check.getPollerParam('riemannServiceId');
-    if (checkEvent.message=="up" || checkEvent.message=="down" && riemannServiceId){
-      var statusChange = componentStatusHandler[checkEvent.message](check, checkEvent);
+    var riemannServiceId = check.pollerParams['riemannServiceId'];
+    if (event.message=="up" || event.message=="down" && riemannServiceId) {
+      var statusChange = componentStatusHandler[event.message](check, event);
       // Send Status
       console.log('Send Riemann alert');
       var payload = '{';
@@ -70,13 +70,13 @@ exports.initWebApp = function(options) {
         payload += '"state": "' + statusChange + '",';
         payload += '"description": "UPTIME: Service offline"}';
       status.sendEvent(payload, function(err, result) {
-        if(result != null && result.status == "200") {
+        if (result != null && result.status == "200") {
           console.log('Riemann: service status changed');
-        } else {
+       } else {
           console.error('Riemann: error sending riemann message. \nResponse: ' + JSON.stringify(result));
-        }
-      });
-    }
+       }
+     });
+   }
 		});
 	});
 
