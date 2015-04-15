@@ -1,6 +1,12 @@
 uptime
 ======
 
+## Transitionary Status
+
+Please note that this is repo is in a transition state until all the legacy code has been refactored. I am in the process of decoupling the dashboard web app from the api/monitor. Currently, the API is mostly functional but the dashboard is not. Use at your own risk.
+
+## Intro
+
 A remote monitoring application using Node.js, MongoDB, and Twitter Bootstrap. Forked from http://fzaninotto.github.com/uptime/
 
 <img src="https://raw.github.com/springerpe/uptime/downloads/check_details.png" title="Visualizing the availability of an HTTP check in Uptime" width="50%" valign="top" />
@@ -15,9 +21,9 @@ Features
 * Tweak frequency of monitoring on a per-check basis, up to the second
 * Check the presence of a pattern in the response body
 * Receive notifications whenever a check goes down
-  * On screen (powered by [socket.io](http://socket.io/))
-  * By email
-  * On the console
+* On screen (powered by [socket.io](http://socket.io/))
+* By email
+* On the console
 * Record availability statistics for further reporting (powered by [MongoDB](http://www.mongodb.org/))
 * Detailed uptime reports with animated charts (powered by [Flotr2](http://www.humblesoftware.com/flotr2/))
 * Monitor availability, responsiveness, average response time, and total uptime/downtime
@@ -31,78 +37,69 @@ Features
 Installing Uptime
 -----------------
 
-Uptime 3.2 requires Node.js 0.10 and MongoDB 2.1. Older versions provide compatibility with Node 0.8 (Uptime v3.1) and 0.6 (Uptime v1.4).
+Uptime requires Node.js 0.10 and MongoDB 2.1. Older versions provide compatibility with Node 0.8 (Uptime v3.1) and 0.6 (Uptime v1.4).
 
 To install from GitHub, clone the repository and install dependencies using `npm` and `bower`:
 
 ```sh
-$ git clone git://github.com/springerpe/uptime.git
-$ cd uptime
-$ npm install
-$ bower install
+git clone git://github.com/nerevu/uptime.git
+cd uptime
+npm install
+bower install
 ```
 
 Lastly, start the application with:
 
 ```sh
-$ node app
+node app
 ```
 
-Alternatively, a simple init script is provided. It assumes Uptime is installed to `/var/www/uptime`. If Uptime is installed in a different directory, the `APP_DIR` variable needs to be changed to reflect the Uptime's true location. To install this init script, copy `uptime` from the project's root directory to your system's init script directory (for example `/etc/init.d/`). Make sure the file is executable (`sudo chmod +x /etc/init.d/uptime`) and owned by root (`sudo chown root:root /etc/init.d/uptime`). To start the uptime service on every boot, register the service with your particular init system and enable it. 
-
-Upgrading From a 2.0 Install
-----------------------------
-
-If you have been using uptime 1.0 or 2.0, you have to execute the migration script before using the new release.
-
-```sh
-$ node models/migrations/upgrade2to3
-```
+Alternatively, a simple init script is provided. It assumes Uptime is installed to `/var/www/uptime`. If Uptime is installed in a different directory, the `APP_DIR` variable needs to be changed to reflect the Uptime's true location. To install this init script, copy `uptime` from the project's root directory to your system's init script directory (for example `/etc/init.d/`). Make sure the file is executable (`sudo chmod +x /etc/init.d/uptime`) and owned by root (`sudo chown root:root /etc/init.d/uptime`). To start the uptime service on every boot, register the service with your particular init system and enable it.
 
 Adding Checks
 -------------
 
 By default, the web UI runs on port 8082, so just browse to
 
-    http://localhost:8082/
+	http://localhost:8082/
 
-And you're ready to begin. Create your first check by entering an URL, wait for the first ping, and you'll soon see data flowing through your charts!
+And you're ready to begin. Create your first check by entering a URL, wait for the first ping, and you'll soon see data flowing through your charts!
 
 Configuring
 -----------
 
-Uptime uses [node-config](https://github.com/lorenwest/node-config) to allow YAML configuration and environment support. Here is the default configuration, taken from `config/default.yaml`:
+Uptime uses [coffee-script](https://github.com/jashkenas/coffeescript) to allow coffeescript configuration and environment support. Here is the default configuration, taken from `config/default.coffee`:
 
-```yaml
+```coffee
 url:        'http://localhost:8082'
 
 mongodb:
-  server:   localhost
-  database: uptime
-  user:     root
-  password:
-  connectionString:       # alternative to setting server, database, user and password separately
+	server:   localhost
+	database: uptime
+	user:     root
+	password:
+	connectionString:       # alternative to setting server, database, user and password separately
 
 monitor:
-  name:                   origin
-  apiUrl:                 'http://localhost:8082/api' # must be accessible without a proxy
-  pollingInterval:        10000      # ten seconds
-  timeout:                5000       # five seconds
-  userAgent:              NodeUptime/2.0 (https://github.com/springerpe/uptime)
+	name:                   origin
+	apiUrl:                 'http://localhost:8082/api' # must be accessible without a proxy
+	pollingInterval:        10000      # ten seconds
+	timeout:                5000       # five seconds
+	userAgent:              NodeUptime/2.0 (https://github.com/nerevu/uptime)
 
 analyzer:
-  updateInterval:         60000      # one minute
-  qosAggregationInterval: 600000     # ten minutes
-  pingHistory:            8035200000 # three months
+	updateInterval:         60000      # one minute
+	qosAggregationInterval: 600000     # ten minutes
+	pingHistory:            8035200000 # three months
 
 autoStartMonitor: true
 
 plugins:
-  - ./plugins/console
-  - ./plugins/patternMatcher
-  - ./plugins/httpOptions
-  - ./plugins/basicAuth
-  # - ./plugins/email
+	- ./plugins/console
+	- ./plugins/patternMatcher
+	- ./plugins/httpOptions
+	- ./plugins/basicAuth
+	# - ./plugins/email
 ```
 
 To modify this configuration, create a `development.yaml` or a `production.yaml` file in the same directory, and override just the settings you need. For instance, to run Uptime on port 80 in production, create a `production.yaml` file as follows:
@@ -120,10 +117,10 @@ By default, Uptime uses regular HTTP on the API and monitor server, but it's pos
 
 ```yaml
 ssl:
-  enabled:                true
-  certificate:            uptime.crt # path to certificate file
-  key:                    uptime.key # path to key file
-  selfSigned:             false
+	enabled:                true
+	certificate:            uptime.crt # path to certificate file
+	key:                    uptime.key # path to key file
+	selfSigned:             false
 ```
 
 You must specify `true` for the `selfSigned` option when using a self-signed certificate, otherwise Node.js will throw an "UNABLE_TO_VERIFY_LEAF_NODE" error and will not poll.
@@ -140,8 +137,8 @@ However, heavily browsing the webapp may slow down the whole server - including 
 To that extent, set the `autoStartMonitor` setting to `false` in the `production.yaml`, and launch the monitor by hand:
 
 ```sh
-$ node monitor &
-$ node app
+node monitor &
+node app
 ```
 
 You can also run the monitor in a different server. This second server must be able to reach the API of the webapp server: set the `monitor.apiUrl` setting accordingly in the `production.yaml` file of the monitor server.
@@ -168,11 +165,11 @@ Three of the bundled plugins are already enabled by default:
 ```yaml
 # in config/default.yaml
 plugins:
-  - ./plugins/console
-  - ./plugins/patternMatcher
-  - ./plugins/httpOptions
-  # - ./plugins/email
-  # - ./plugins/basicAuth
+	- ./plugins/console
+	- ./plugins/patternMatcher
+	- ./plugins/httpOptions
+	# - ./plugins/email
+	# - ./plugins/basicAuth
 ```
 
 You can override these settings in your environment configuration, for instance:
@@ -181,16 +178,16 @@ You can override these settings in your environment configuration, for instance:
 # in config/production.yaml
 # disable the console plugin and enable the email plugin
 plugins:
-  # - ./plugins/console
-  - ./plugins/patternMatcher
-  - ./plugins/httpOptions
-  - ./plugins/email
-  # - ./plugins/basicAuth
+	# - ./plugins/console
+	- ./plugins/patternMatcher
+	- ./plugins/httpOptions
+	- ./plugins/email
+	# - ./plugins/basicAuth
 ```
 
 Third-party plugins:
 
- * [`webhooks`](https://github.com/mintbridge/uptime-webhooks): notify events to an URL by sending an HTTP POST request
+ * [`webhooks`](https://github.com/mintbridge/uptime-webhooks): notify events to a URL by sending an HTTP POST request
  * [`campfire`](https://gist.github.com/dmathieu/5592418): notify events to Campfire
  * [`pushover`](https://gist.github.com/xphyr/5994345): notify events to mobile devices
  * [`sns`](https://github.com/curtisz/uptime-sns-plugin): notify events to AWS SNS
@@ -211,11 +208,11 @@ For instance, if you had to recreate a simple version of the `console` plugin, y
 // in plugins/console/index.js
 var CheckEvent = require('../../models/checkEvent');
 exports.initWebapp = function() {
-  CheckEvent.on('afterInsert', function(checkEvent) {
-    checkEvent.findCheck(function(err, check) {
-      console.log(new Date() + check.name + checkEvent.isGoDown ? ' goes down' : ' goes back up');
-    });
-  });
+	CheckEvent.on('afterInsert', function(checkEvent) {
+		checkEvent.findCheck(function(err, check) {
+			console.log(new Date() + check.name + checkEvent.isGoDown ? ' goes down' : ' goes back up');
+		});
+	});
 }
 ```
 All Uptime entities emit lifecycle events that you can listen to on the Model class. These events are `beforeInsert`, `afterInsert`, `beforeUpdate`, `afterUpdate`, `beforeSave` (called for both inserts and updates), `afterSave` (called for both inserts and updates), `beforeRemove`, and `afterRemove`. For more information about these events, check the [mongoose-lifecycle](https://github.com/fzaninotto/mongoose-lifecycle) plugin.
@@ -223,17 +220,16 @@ All Uptime entities emit lifecycle events that you can listen to on the Model cl
 API
 ---------------
 
-All API requests should be prefixed with `api`.
 The API response always uses the `application/json` mimetype.
-API requests do not require authentication.
+API requests require authentication.
 
 Example of a valid API request:
 
-`GET http://example.com/api/checks`
+`GET http://localhost:3333/check`
 
 Example for a valid API request using curl :
 
-`curl -i -H "Accept: application/json" -X PUT -d "name=example" -d "url=http://mysite.com" -d "interval=120" http://example.com/api/checks`
+`curl -i -H "Accept: application/json" -X PATCH -d "name=example" -d "url=http://mysite.com" -d "interval=120" http://example.com/api/checks`
 
 ### Status codes
 
@@ -244,17 +240,65 @@ The API is designed to return different status codes :
 * `404 Not Found` : A resource could not be accessed (e.g. a check ID could not be found)
 * `500 Server Error` : Something went wrong on the server side (e.g. a check could not be saved in database)
 
+### Intro
+
+Creations steps `user -> monitor -> poller -> check -> notifier`
+
+### Authentication
+
+#### create a user
+
+	import requests
+	base = 'http://localhost:3333'
+	email, password = 'email', 'password'
+	data = {'name': name, 'email': email, 'password': password, 'confirmPassword': password}
+	r = requests.post(base + '/user', data=data)
+
+
+#### save authentication details to include in future requests
+
+	auth = (email, password)
+
+#### create a monitor
+
+	r = requests.post(base + '/monitor', auth=auth)
+
+### Usage
+
+#### create a poller
+
+	monitor_id = r.json()['objects']['items']['_id']
+	data = {'monitor': monitor_id}
+	r = requests.post(base + '/poller/http', data=data, auth=auth)
+
+#### create a check
+
+	url = 'http://google.com/'
+	data = {'poller': r.json()['objects']['items']['_id'], 'url': url}
+	r = requests.post(base + '/check', data=data, auth=auth)
+
+#### create a notifier
+
+	data = {'check': r.json()['objects']['items']['_id']}
+	r = requests.post(base + '/notifier/console', data=data, auth=auth)
+
+### Misc
+
+#### (un)pause the monitor
+
+	r = requests.get(base + '/monitor/' + monitor_id + '/toggle', auth=auth)
+
 ### CRUD routes
 
 #### `GET /checks`
 
 Return a list of all checks
 
-#### `GET /checks/needingPoll`
+#### `GET /checks/unpolled`
 
 Return a list of checks that need a poll (i.e. not paused, plus new or last tested > interval set between tests)
 
-#### `GET /checks/:id?apikey=xxxxx`
+#### `GET /checks/:id`
 
 Return a single check
 
@@ -262,9 +306,9 @@ Parameter :
 
 * `id` : (required) Id of the check
 
-Ex: `http://localhost:8082/api/checks/527a25bdc9de6e0000000004?apikey=xxxxx`
+Ex: `http://localhost:8082/api/checks/527a25bdc9de6e0000000004`
 
-#### `GET /checks/:id/pause`
+#### `GET /checks/:id/toggle`
 
 Toggle the status (isPaused) of a check
 
@@ -272,9 +316,9 @@ Parameter :
 
 * `id` : (required) Id of the check
 
-Ex: `http://localhost:8082/api/checks/527a25bdc9de6e0000000004/pause?apikey=xxxxx`
+Ex: `http://localhost:8082/api/checks/527a25bdc9de6e0000000004/toggle `
 
-#### `PUT /check/:id/test`
+#### `PATCH /check/:id`
 
 Updates the last checked date for a check. Used to avoid double check when a target is slow.
 Return the number of affected records in the database (1 or 0).
@@ -283,7 +327,7 @@ Parameter :
 
 * `id` : (required) Id of the check
 
-Ex: `http://localhost:8082/api/checks/527a25bdc9de6e0000000004/test?apikey=xxxxx`
+Ex: `http://localhost:8082/api/checks/527a25bdc9de6e0000000004/test`
 
 #### `GET /pings`
 
@@ -294,13 +338,13 @@ Parameters :
 * `?page=1` : (optional) Paginate results by 50
 * `?check=:id` : (optional) Return only the pings for a given check
 
-Ex: `http://localhost:8082/api/pings?check=527a25bdc9de6e0000000004?apikey=xxxxx`
+Ex: `http://localhost:8082/api/pings?check=527a25bdc9de6e0000000004`
 
-#### `GET /pings/events?apikey=xxxxx`
+#### `GET /event/:period/:timestamp?`
 
 Return a list of events (CheckEvent) aggregated by day, limited to the latest week, and to 100 results
 
-#### `POST /pings?apikey=xxxxx`
+#### `POST /pings`
 
 Create a ping for a check, if the check exists and is not already polled
 
@@ -314,11 +358,11 @@ Parameters :
 * `error` : (optional)
 * `details` : (optional)
 
-#### `GET /tags?apikey=xxxxx`
+#### `GET /tags`
 
 Return list of all tags
 
-#### `GET /tags/:name?apikey=xxxxx`
+#### `GET /tags/:name`
 
 Return a single tag
 
@@ -326,9 +370,9 @@ Parameter :
 
 * `name` : (required) name of the tag
 
-Ex: `http://localhost:8082/tags/good?apikey=xxxxx`
+Ex: `http://localhost:8082/tags/good`
 
-#### `DELETE /tags/:name?apikey=xxxxx`
+#### `DELETE /tags/:name`
 
 Return a tag
 
@@ -336,7 +380,7 @@ Parameter :
 
 * `name` : (required) name of the tag
 
-#### `POST /checks?apikey=xxxxx`
+#### `POST /checks`
 
 Create a new check and return it
 
@@ -351,7 +395,7 @@ Parameters :
 * `tags` : (optional) list of tags (comma-separated values)
 * `type` : (optional) type of check (auto|http|https|udp)
 
-#### `PUT /checks/:id?apikey=xxxxx`
+#### `PATCH /checks/:id`
 
 Update a check and return it
 
@@ -369,7 +413,7 @@ Parameters :
 
 Ex: `http://localhost:8082/api/checks/527a25bdc9de6e0000000004`
 
-#### `DELETE /checks/:id?apikey=xxxxx`
+#### `DELETE /checks/:id`
 
 Delete a check
 
@@ -377,23 +421,23 @@ Parameters :
 
 * `id` : (required) Id of the check
 
-Ex: `http://localhost:8082/api/checks/527a25bdc9de6e0000000004?apikey=xxxxx`
+Ex: `http://localhost:8082/api/checks/527a25bdc9de6e0000000004`
 
 ### Statistics routes
 
-#### `GET /checks/:id/stat/:period/:timestamp?apikey=xxxxx`
+#### `GET /stat/check/:id/:period/:timestamp`
 
 Return check stats for a period
 
 Parameters :
 
-   * `id` : (required) Id of the check
-   * `period` : (required) Period - values :  `hour`|`day`|`month`|`year`
-   * `timestamp` : (required) Start date (timestamp)
+* `id` : (required) Id of the check
+* `period` : (required) Period - values :  `hour`|`day`|`month`|`year`
+* `timestamp` : (required) Start date (timestamp)
 
-Ex: `http://localhost:8082/api/checks/527a25bdc9de6e0000000004/stat/day/1383260400000?apikey=xxxxx`
+Ex: `http://localhost:8082/api/checks/527a25bdc9de6e0000000004/stat/day/1383260400000`
 
-#### `GET /checks/:id/stats/:type?apikey=xxxxx`
+#### `GET /stat/check/:id/:type`
 
 Return check stats for a period
 
@@ -404,9 +448,9 @@ Parameters :
 * `?begin=` : (required) Start date (timestamp)
 * `?end=` : (required) End date (timestamp)
 
-Ex: `http://localhost:8082/api/checks/527a25bdc9de6e0000000004/stats/month?begin=1383260400000&end=1385852399999?apikey=xxxxx`
+Ex: `http://localhost:8082/api/checks/527a25bdc9de6e0000000004/stats/month?begin=1383260400000&end=1385852399999`
 
-#### `GET /tags/:name/checks/:period/:timestamp?apikey=xxxxx`
+#### `GET /tags/:name/checks/:period/:timestamp`
 
 Return tag stats for a period, joined by checks
 
@@ -416,9 +460,9 @@ Parameters :
 * `period` : (required) Period - values :  `hour`|`day`|`month`|`year`
 * `timestamp` : (required) Start date (timestamp)
 
-Ex: `http://localhost:8082/api/tags/good/checks/month/1384816432099?apikey=xxxxx`
+Ex: `http://localhost:8082/api/tags/good/checks/month/1384816432099`
 
-#### `GET /tags/:name/stat/:period/:timestamp?apikey=xxxxx`
+#### `GET /stat/tagged/:id/:period/:timestamp`
 
 Return tag stats for a period
 
@@ -428,9 +472,9 @@ Parameters :
 * `period` : (required) Period - values :  `hour`|`day`|`month`|`year`
 * `timestamp` : (required) Start date (timestamp)
 
-Ex: `http://localhost:8082/api/tags/good/stat/month/1383260400000?apikey=xxxxx`
+Ex: `http://localhost:8082/api/tags/good/stat/month/1383260400000`
 
-#### `GET /tags/:name/stats/:type?apikey=xxxxx`
+#### `GET /stat/tagged/:id/:type`
 
 Return tag stats for a period
 
@@ -441,11 +485,11 @@ Parameters :
 * `?begin=` : (required) Start date (timestamp)
 * `?end=` : (required) End date (timestamp)
 
-Ex: `http://localhost:8082/api/tags/good/stats/month?begin=1383260400000&end=1385852399999?apikey=xxxxx`
+Ex: `http://localhost:8082/api/tags/good/stats/month?begin=1383260400000&end=1385852399999`
 
 ### Event routes
 
-#### `GET /checks/:id/events?apikey=xxxxx`
+#### `GET /event/check/:id/:period/:timestamp?`
 
 Return the list of all events for the check
 
@@ -453,9 +497,9 @@ Parameter :
 
 * `id` : (required) Id of the check
 
-Ex: `http://localhost:8082/api/checks/527a25bdc9de6e0000000004/events?apikey=xxxxx`
+Ex: `http://localhost:8082/api/checks/527a25bdc9de6e0000000004/events`
 
-#### `GET /tags/:name/events?apikey=xxxxx`
+#### `GET /event/tagged/:id/:period/:timestamp?`
 
 Return the list of all events associated to the tag
 
@@ -465,7 +509,7 @@ Parameter :
 * `?begin=` : (optional) Start date (timestamp)
 * `?end=` : (optional) End date (timestamp)
 
-Ex: `http://localhost:8082/api/tags/good/events?begin=1383260400000&end=1385852399999?apikey=xxxxx`
+Ex: `http://localhost:8082/api/tags/good/events?begin=1383260400000&end=1385852399999`
 
 Support and Discussion
 ----------------------
@@ -475,7 +519,7 @@ Join the [node-uptime](https://groups.google.com/d/forum/node-uptime) Google Gro
 License
 -------
 
-The Uptime code is free to use and distribute, under the [MIT license](https://raw.github.com/springerpe/uptime/master/LICENSE).
+The Uptime code is free to use and distribute, under the [MIT license](https://raw.github.com/nerevu/uptime/master/LICENSE).
 
 Uptime uses third-party libraries:
 
@@ -487,11 +531,11 @@ Uptime uses third-party libraries:
 * [Flotr2](http://www.humblesoftware.com/flotr2/), licensed under the [MIT License](https://github.com/HumbleSoftware/Flotr2/blob/master/LICENSE).
 * [Favicon](http://www.alexpeattie.com/projects/justvector_icons/), distributed under the [Free Art License](http://artlibre.org/licence/lal/en).
 
-If you like the software, please help improving it by contributing PRs on the [GitHub project](https://github.com/springerpe/uptime)!
+If you like the software, please help improving it by contributing PRs on the [GitHub project](https://github.com/nerevu/uptime)!
 
 TODO
 ----
 
-* Account for scheduled maintenance (and provide two QoS calculations: with and without scheduled maintenance)
+* User for scheduled maintenance (and provide two QoS calculations: with and without scheduled maintenance)
 * Allow for JavaScript execution in the monitored resources by using a headless browser (probably zombie.js)
 * Unit tests

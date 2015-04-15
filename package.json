@@ -1,8 +1,8 @@
 {
-  "name": "springer-uptime",
+  "name": "uptime",
   "description": "Remote monitoring for HTTP applications",
   "version": "4.0.1",
-  "author": "Francois Zaninotto and Springer PE",
+  "author": "Francois Zaninotto, Springer PE, Reuben Cummings",
   "dependencies": {
     "async": "0.9.0",
     "bcrypt": "^0.8.2",
@@ -56,7 +56,7 @@
     "api",
     "check"
   ],
-  "repository": "https://github.com/springerpe/uptime",
+  "repository": "https://github.com/nerevu/uptime",
   "license": "MIT",
   "engines": {
     "node": "0.10.x",
