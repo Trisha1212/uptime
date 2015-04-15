@@ -5,10 +5,10 @@ var exports, logger
   , moment = require('moment')
   , _ = require('underscore')
   , util = require('util')
-  , semver = require('semver');
+  , semver = require('semver')
   , Check = require('./models/check')
   , transports = []
-  , env = process.env.NODE_ENV || 'development';
+  , env = process.env.NODE_ENV || 'development'
 
 function winstonConsole () {
   transports.push(new winston.transports.Console({colorize: true}));
@@ -42,7 +42,7 @@ logger = new winston.Logger({transports: transports});
 
 function connectWithRetry (mongoose, connectionString) {
   var options = {server: {auto_reconnect: true}}
-  conn = mongoose.connect(connectionString, options,
+  conn = mongoose.connect(connectionString, options)
   conn.on('err', function(err) {
     msg = 'Failed to connect to mongo on startup - retrying in 5 sec'
     console.error(msg, err);
@@ -57,7 +57,7 @@ function connectWithRetry (mongoose, connectionString) {
         errback(msg);
       } else if (err && (err.errmsg === 'need to login' || err.errmsg === 'unauthorized')) {
         console.log('Forcing MongoDB authentication');
-        conn.db.authenticate(mongo.user, mongo.pwd, errback});
+        conn.db.authenticate(mongo.user, mongo.pwd, errback);
       } else {
         errback(err);
       }
