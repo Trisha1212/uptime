@@ -1,10 +1,11 @@
-var exports
+var exports, logger
   , winston = require('winston')
   , papertrail = require('winston-papertrail').Papertrail
   , mongoose = require('mongoose')
   , moment = require('moment')
   , _ = require('underscore')
   , util = require('util')
+  , semver = require('semver');
   , Check = require('./models/check')
   , transports = []
   , env = process.env.NODE_ENV || 'development';
@@ -39,7 +40,36 @@ if (env == 'development') {
 
 logger = new winston.Logger({transports: transports});
 
+function connectWithRetry (mongoose, connectionString) {
+  var options = {server: {auto_reconnect: true}}
+  conn = mongoose.connect(connectionString, options,
+  conn.on('err', function(err) {
+    msg = 'Failed to connect to mongo on startup - retrying in 5 sec'
+    console.error(msg, err);
+    setTimeout(connectWithRetry.bind(mongoose, connectionString), 5000);
+  });
+
+  conn.on('open', function() {
+    conn.db.admin().serverStatus(function(err, data) {
+      if (!semver.satisfies(data.version, '>=2.1.0')) {
+        msg = 'Error: Uptime requires MongoDB v2.1 minimum.'
+        msg += 'The current MongoDB server is ' + data.version
+        errback(msg);
+      } else if (err && (err.errmsg === 'need to login' || err.errmsg === 'unauthorized')) {
+        console.log('Forcing MongoDB authentication');
+        conn.db.authenticate(mongo.user, mongo.pwd, errback});
+      } else {
+        errback(err);
+      }
+   });
+ });
+};
+
 exports = module.exports = {
+  logger: logger,
+  env: env,
+  connectWithRetry: connectWithRetry,
+
   objectify: function(collection) {
     var i, len
       , results = []
@@ -108,8 +138,6 @@ exports = module.exports = {
     return Check.findById(Model.check, callback);
   },
 
-  logger: logger,
-  env: env,
   errback: function(err) {if (err) logger.error(err)},
 
   sendResponse: function(res, response, options) {

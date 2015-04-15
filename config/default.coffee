@@ -4,30 +4,41 @@ hours = minutes * 60
 days = hours * 24
 months = days * 30
 
-module.exports =
+config =
+  site: title: 'dff'
   url: process.env.BASE_URL
+  userAgent: 'NodeUptime/3.0 (https://github.com/springerpe/uptime)'
+  brand: 'Uptime'
+  email: ''
+  timeout: seconds * 5
+  maxResponseTime: seconds * 1.5
+  minResponseSize: 1024
+  checkInterval: seconds * 10
+  verbose: process.env.DEBUG or false
+  enable:
+    toobusy: false
 
-  mongodb:
-    server: process.env.MONGO_ENDPOINT  # localhost
-    database: process.env.MONGO_DATABASE  # uptime
+  jwt:
+    secret: process.env.TOKEN_SECRET || "oursecret",
+    issuer: process.env.TOKEN_ISSUER || "accounts.site.com",
+    audience: process.env.TOKEN_AUDIENCE || "site.com",
+    field: 'auth_token',
+    scheme: 'JWT'
+    duration: months * 3
+
+  mongo:
+    server: process.env.MONGO_ENDPOINT  or 'localhost'
+    db: process.env.MONGO_DATABASE or 'uptime'
     user: process.env.MONGO_USER
-    password: process.env.MONGO_PWD
-    # alternative to setting server, database, user and password separately
-    connectionString: process.env.MONGODB_URL
+    pwd: process.env.MONGO_PWD
 
-  monitor:
-    name: origin
-    apiUrl: 'http://localhost:8082/api'  # must be accessible without a proxy
-    pollingInterval: seconds * 10
-    timeout: seconds * 5
-    userAgent: 'NodeUptime/3.0 (https://github.com/springerpe/uptime)'
+    # alternative to setting server, database, user and password separately
+    connectionString: process.env.MONGOLAB_URI
 
   analyzer:
     updateInterval: minutes * 1
     qosAggregationInterval: minutes * 10
     pingHistory: months * 3
-
-  autoStartMonitor: true
 
   plugins: [
     './plugins/console'
@@ -69,8 +80,6 @@ module.exports =
     username: process.env.BASIC_AUTH_USER
     password: process.env.BASIC_AUTH_PASSWORD
 
-  verbose: process.env.DEBUG || false
-
   # ssl:
   #   enabled: true
   #   certificate: process.env.SSL_CRT  # certificate file
@@ -107,7 +116,9 @@ module.exports =
     username: process.env.RIEMANN_USERNAME
     password: process.env.RIEMANN_PASSWORD
 
-  webPageTest:
-    server: 'http://www.webpagetest.org'
-    key:
-    testOptions:
+  # webPageTest:
+  #   server: 'http://www.webpagetest.org'
+  #   key:
+  #   testOptions:
+
+module.exports = config
